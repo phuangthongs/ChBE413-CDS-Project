@@ -2,7 +2,9 @@
 
 Group Members: 
 Eric Giavedoni
+
 Yong-Cheol Cho
+
 Siri Phuangthong
 
 Project Summary:
