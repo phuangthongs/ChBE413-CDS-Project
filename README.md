@@ -10,16 +10,5 @@ Polymer electrolytes are a class of materials widely studied for applications in
 
 Our repository includes:
 
-
-Paper of the project
-
-Presentation slideshow
-
-Code for featurization
-
-Code for random forest model
-
-Dataset from TYR
-
-References
+Paper of the project, Presentation slideshow, Code for featurization, Code for random forest model, Dataset from TYR, References
 
