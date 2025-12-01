@@ -4,6 +4,7 @@ import pathlib
 import pandas
 import sklearn
 import numpy
+import torch
 import matplotlib.pyplot as plt
 
 try:
@@ -53,7 +54,7 @@ def read_and_process() -> pandas.Series:
     )
 
 
-def feat_importance_rf(df: pandas.Series):
+def to_np_data(df: pandas.Series):
     label_col = "CONDUCTIVITY"
     feat_exclude = ["Mol_smiles_clean", "is_valid"]
     feats = list(df.columns)
@@ -70,6 +71,11 @@ def feat_importance_rf(df: pandas.Series):
     for i, f in enumerate(feats):
         data_numpy[:, i + 1] = df[f].to_numpy()
 
+    return feats, data_numpy
+
+
+def feat_importance_rf(df: pandas.Series):
+    feats, data_numpy = to_np_data(df)
     rf_reg = sklearn.ensemble.RandomForestRegressor()
     rf_reg.fit(data_numpy[:, 1:], data_numpy[:, 0])
     rf_pred = rf_reg.predict(data_numpy[:, 1:])
@@ -81,13 +87,16 @@ def feat_importance_rf(df: pandas.Series):
     imp_feat = [
         (name, val)
         for name, val in zip(feats, rf_reg.feature_importances_)
-        if val > 0.005
+        # if val > 0.005
     ]
     imp_feat.sort(key=lambda x: x[1], reverse=True)
 
     imp_fig, imp_ax = plt.subplots(1, 1, figsize=(8, 8))
-    imp_ax.bar([f[0] for f in imp_feat], [f[1] for f in imp_feat])
-    imp_ax.set_xticks(range(len(imp_feat)), [f[0] for f in imp_feat], rotation=90)
+    plot_cutoff = 0.005
+    plot_label = [f[0] for f in imp_feat if f[1] > plot_cutoff]
+    plot_value = [f[1] for f in imp_feat if f[1] > plot_cutoff]
+    imp_ax.bar(plot_label, plot_value)
+    imp_ax.set_xticks(range(len(plot_label)), plot_label, rotation=90)
     # imp_ax.set_xticklabels([f[0] for f in imp_feat], rotation=90)
     plt.tight_layout()
     plt.savefig("feat_importance_rf.png", dpi=300)  # transparent=True)
@@ -96,6 +105,57 @@ def feat_importance_rf(df: pandas.Series):
     return imp_feat
 
 
+def construct_mlp(sizes: list[int], sample_frame: torch.Tensor = None):
+    if sizes[0] < 0 and sample_frame is not None:
+        sizes[0] = len(sample_frame)
+
+    modules = []
+    for i, (size_in, size_out) in enumerate(zip(sizes, sizes[1:])):
+        modules.append(torch.nn.Linear(size_in, size_out, dtype=torch.float64))
+        if i < len(sizes) - 2:
+            modules.append(torch.nn.ReLU())
+
+    return torch.nn.Sequential(*modules)
+
+
+def train_nn(df: pandas.Series, col_names: list[str]):
+    names = col_names
+    if "CONDUCTIVITY" not in names:
+        names.insert(0, "CONDUCTIVITY")
+    feats, data_tensor = to_np_data(df[names])
+    data_tensor = torch.tensor(data_tensor)
+
+    model = construct_mlp([-1, 16, 4, 1], data_tensor[0, 1:])
+    n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"There are {n_params} trainable parameters.")
+
+    loss_fn = torch.nn.MSELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+    for _ in tqdm(range(256), desc="Training"):
+        pred = model(data_tensor[:, 1:])
+        loss = loss_fn(pred.reshape((-1,)), data_tensor[:, 0])
+        # print(f"Current Loss = {loss}\033[A\r", end="")
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+    print(f"Final Loss = {loss}")
+
+
 if __name__ == "__main__":
     clean_df, scaler = read_and_process()
-    imp_feat_rf = feat_importance_rf(clean_df)
+    imp_feat_list = []
+    try:
+        with open("imp_feat_list.txt", "r") as file:
+            for line in file:
+                imp_feat_list.append(line.strip())
+    except FileNotFoundError:
+        imp_feat_rf = feat_importance_rf(clean_df)
+        with open("imp_feat_list.txt", "w") as file:
+            for name, _ in imp_feat_rf:
+                file.write(f"{name}\n")
+        imp_feat_list = [f[0] for f in imp_feat_rf]
+
+    train_nn(clean_df, imp_feat_list)
+    train_nn(clean_df, imp_feat_list[10:])
