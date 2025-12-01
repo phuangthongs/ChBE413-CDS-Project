@@ -17,14 +17,14 @@ if _PROJ_ROOT not in sys.path:
     sys.path.append(_PROJ_ROOT)
 
 
-import load_utils
+import src.load_utils
 
 
 def read_no_rescale() -> pandas.Series:
     cond_df = pandas.read_csv(
-        _PROJ_ROOT / pathlib.Path("./data/featurized_ionic_conductivity_dataset.csv")
+        _PROJ_ROOT / pathlib.Path("./data/combined_featurized_data.csv")
     )
-    return load_utils.clean_dataframe(
+    return src.load_utils.clean_dataframe(
         cond_df,
         method="iqr",
         cutoff=1.5,
@@ -52,7 +52,7 @@ def read_no_rescale() -> pandas.Series:
 
 
 def read_and_process() -> pandas.Series:
-    return load_utils.rescale_features(
+    return src.load_utils.rescale_features(
         read_no_rescale(),
         exclude_cols=["CONDUCTIVITY"],
     )
