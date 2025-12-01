@@ -20,36 +20,40 @@ if _PROJ_ROOT not in sys.path:
 import load_utils
 
 
-def read_and_process() -> pandas.Series:
+def read_no_rescale() -> pandas.Series:
     cond_df = pandas.read_csv(
         _PROJ_ROOT / pathlib.Path("./data/featurized_ionic_conductivity_dataset.csv")
     )
+    return load_utils.clean_dataframe(
+        cond_df,
+        method="iqr",
+        cutoff=1.5,
+        exclude_cols=[
+            "Num_positive_atoms",
+            "Num_negative_atoms",
+            "Count_P",
+            "Count_Cl",
+            "Count_O",
+            "Count_Si",
+            "Count_C",
+            "Count_F",
+            "Count_N",
+            "Count_S",
+            "is_valid",
+            "Heteroatom_count",
+            "RingCount",
+            "NumAromaticRings",
+            "NumAliphaticRings",
+        ],
+        smiles_cols=["Mol_smiles_clean"],
+        drop_na=True,
+        drop_duplicates=True,
+    )
+
+
+def read_and_process() -> pandas.Series:
     return load_utils.rescale_features(
-        load_utils.clean_dataframe(
-            cond_df,
-            method="iqr",
-            cutoff=1.5,
-            exclude_cols=[
-                "Num_positive_atoms",
-                "Num_negative_atoms",
-                "Count_P",
-                "Count_Cl",
-                "Count_O",
-                "Count_Si",
-                "Count_C",
-                "Count_F",
-                "Count_N",
-                "Count_S",
-                "is_valid",
-                "Heteroatom_count",
-                "RingCount",
-                "NumAromaticRings",
-                "NumAliphaticRings",
-            ],
-            smiles_cols=["Mol_smiles_clean"],
-            drop_na=True,
-            drop_duplicates=True,
-        ),
+        read_no_rescale(),
         exclude_cols=["CONDUCTIVITY"],
     )
 
