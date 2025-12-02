@@ -20,9 +20,9 @@ if _PROJ_ROOT not in sys.path:
 import src.load_utils
 
 
-def read_no_rescale() -> pandas.Series:
+def read_no_rescale(path="./data/combined_featurized_data.csv") -> pandas.Series:
     cond_df = pandas.read_csv(
-        _PROJ_ROOT / pathlib.Path("./data/combined_featurized_data.csv")
+        _PROJ_ROOT / pathlib.Path(path)
     )
     return src.load_utils.clean_dataframe(
         cond_df,
