@@ -14,5 +14,5 @@ In this project, our goal is to optimize ionic conductivity prediction by enrich
 
 Our repository includes:
 
-Paper of the project, Code for featurization, Code for random forest model, Course for GNN Dataset from TYR, References
+Paper of the project, Code for featurization, Code for random forest model, Code for GNN Dataset from TYR, References
 
