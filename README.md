@@ -32,7 +32,6 @@ Our repository includes:
 - **Project Paper** – Full documentation of methodology, results, and analysis.  
 - **Featurization Code** – Scripts for generating molecular descriptors and feature engineering.  
 - **Random Forest Model** – Code for training and validating RF models for ionic conductivity prediction.  
-- **GNN Dataset** – Dataset and scripts for Graph Neural Network-based modeling (sourced from TYR).  
-- **References** – Bibliography of relevant literature and data sources.
+- **Graph Convolutional Neural Network Model** – Code for training and validating GCNN models for ionic conductivity prediction.  
 
 
