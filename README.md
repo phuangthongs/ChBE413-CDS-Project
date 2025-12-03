@@ -1,5 +1,7 @@
 ## Chemical Data Science Project - Group 1
 
+UIUC ChBE 413 - Data Science for Chemist and Chemical Engineers
+
 Group Members: Eric Giavedoni, Yong-Cheol Cho, Siri Phuangthong
 
 Abstract:
