@@ -1,3 +1,5 @@
+from enum import Enum
+
 import pandas
 import numpy
 import sklearn
@@ -10,10 +12,14 @@ except ImportError:
     tqdm = lambda x, *args, **kwargs: x
 
 
+class OutlierType(Enum):
+    IQR = 1
+    Z_SCORE = 2
+
 # Helper functions to clean the dataframe
 def isoutlier(
     dataframe: pandas.Series,
-    method: str = "iqr",
+    method: OutlierType = OutlierType.IQR,
     cutoff: float = 1.5,
     exclude_cols: list[str] = None,
     progress=None,
@@ -36,7 +42,7 @@ def isoutlier(
             continue
 
         col_data = dataframe[column]
-        if method == "z_score":
+        if method == OutlierType.Z_SCORE:
             col_mean = col_data.mean()
             col_std = col_data.std()
             lower = col_mean - cutoff * col_std
@@ -44,7 +50,7 @@ def isoutlier(
             outlier_df[column] = [
                 (d < lower) or (upper < d) for _, d in col_data.items()
             ]
-        elif method == "iqr":
+        elif method == OutlierType.IQR:
             q1 = col_data.quantile(0.25)
             q3 = col_data.quantile(0.75)
             lower = q1 - cutoff * (q3 - q1)
@@ -60,20 +66,27 @@ def isoutlier(
 
 def clean_dataframe(
     dataframe: pandas.Series,
-    method: str = "iqr",
+    method: OutlierType = OutlierType.IQR,
     cutoff: float = 1.5,
     exclude_cols: list[str] = None,
     smiles_cols: list[str] = None,
     *,
     drop_na: bool = True,
     drop_duplicates: bool = True,
+    verbose=True,
 ) -> pandas.Series:
     if exclude_cols is None:
         exclude_cols = []
     elif isinstance(exclude_cols, str):
         exclude_cols = [exclude_cols]
+
+    if not verbose:
+        f = lambda x, *args, **kwargs: x
+    else:
+        f = tqdm
+
     contains_outlier = ~isoutlier(
-        dataframe, method, cutoff, exclude_cols, progress=tqdm
+        dataframe, method, cutoff, exclude_cols, progress=f
     ).any(axis=1)
     clean_df = dataframe[contains_outlier].reset_index(drop=True)
 
@@ -81,7 +94,7 @@ def clean_dataframe(
         invalid_smiles = {c: [] for c in smiles_cols}
         with rdkit.rdBase.BlockLogs():
             for c in smiles_cols:
-                for _, smiles in tqdm(
+                for _, smiles in f(
                     clean_df[c].items(), desc=f"Checking SMILES validity for column {c}"
                 ):
                     mol = rdkit.Chem.MolFromSmiles(smiles)
